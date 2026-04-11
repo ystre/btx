@@ -9,7 +9,7 @@
 
 typedef enum {
     TOK_HEX,   /* \xNN  */
-    TOK_BITS,  /* 0bBBBBBBBB */
+    TOK_BITS,  /* \bBBBBBBBB */
     TOK_EOF,
 } tok_type_t;
 
@@ -73,8 +73,8 @@ static btx_result_t next_token(lexer_t *l, token_t *tok) {
         return BTX_OK;
     }
 
-    /* 0bBBBBBBBB or 0bBBBB'BBBB */
-    if (l->p[0] == '0' && l->p + 1 < l->end && l->p[1] == 'b') {
+    /* \bBBBBBBBB or \bBBBB'BBBB */
+    if (l->p[0] == '\\' && l->p + 1 < l->end && l->p[1] == 'b') {
         l->p += 2;
         int pos = 0;
         while (pos < 8 && l->p < l->end) {

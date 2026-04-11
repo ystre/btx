@@ -8,7 +8,7 @@ See [SPECIFICATION.md](SPECIFICATION.md) for the full format specification.
 
 ```
 \x12\xac              // hex byte tokens
-0b1111'____ 0b____'0000  // bit-pack tokens (two partials → one byte 0xf0)
+\b1111'____ \b____'0000  // bit-pack tokens (two partials → one byte 0xf0)
 // this is a comment
 \xab  // inline comment
 ```

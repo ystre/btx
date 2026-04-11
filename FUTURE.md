@@ -8,8 +8,8 @@ Human-readable breakdown of a BTX file showing each token, its position, and the
 offset  token               value
 0       \x12                0x12 (18)
 1       \xac                0xac (172)
-2       0b1111'____ +
-        0b____'0000         0xf0 (240)
+2       \b1111'____ +
+        \b____'0000         0xf0 (240)
 ```
 
 ## `btx fmt`

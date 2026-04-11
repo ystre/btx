@@ -38,33 +38,33 @@ static void test_validate_hex_errors(void) {
 
 static void test_validate_bits_ok(void) {
     /* single complete byte */
-    ASSERT_EQ_INT(BTX_OK, btx_validate("0b11110011", 10));
-    ASSERT_EQ_INT(BTX_OK, btx_validate("0b1111'0011", 11));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\b11110011", 10));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\b1111'0011", 11));
     /* two partials forming one byte */
-    ASSERT_EQ_INT(BTX_OK, btx_validate("0b1111'____ 0b____'0011", 23));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\b1111'____ \\b____'0011", 23));
     /* three partials */
-    ASSERT_EQ_INT(BTX_OK, btx_validate("0b11______ 0b__1100__ 0b______11", 32));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\b11______ \\b__1100__ \\b______11", 32));
     /* multiple consecutive groups (each token is a complete byte) */
-    ASSERT_EQ_INT(BTX_OK, btx_validate("0b11110000 0b00001111", 21));
-    ASSERT_EQ_INT(BTX_OK, btx_validate("0b1111'____ 0b____'1111 0b00__'____ 0b__11'00__ 0b____'__11", 59));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\b11110000 \\b00001111", 21));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\b1111'____ \\b____'1111 \\b00__'____ \\b__11'00__ \\b____'__11", 59));
 }
 
 static void test_validate_bits_errors(void) {
     /* non-contiguous within token */
-    ASSERT_EQ_INT(BTX_ERR_BIT_NONCONTIGUOUS, btx_validate("0b1__1'____", 11));
+    ASSERT_EQ_INT(BTX_ERR_BIT_NONCONTIGUOUS, btx_validate("\\b1__1'____", 11));
     /* wrong order: skips bits */
-    ASSERT_EQ_INT(BTX_ERR_BIT_ORDER, btx_validate("0b1111'____ 0b______11", 22));
+    ASSERT_EQ_INT(BTX_ERR_BIT_ORDER, btx_validate("\\b1111'____ \\b______11", 22));
     /* overlap: both set bit 7 */
-    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b1_______ 0b1_______", 21));
-    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b1_______ 0b0_______", 21));
-    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b0_______ 0b1_______", 21));
-    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b0_______ 0b0_______", 21));
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("\\b1_______ \\b1_______", 21));
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("\\b1_______ \\b0_______", 21));
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("\\b0_______ \\b1_______", 21));
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("\\b0_______ \\b0_______", 21));
     /* incomplete: hex token mid-group */
-    ASSERT_EQ_INT(BTX_ERR_BIT_INCOMPLETE, btx_validate("0b1111'____ \\xff", 16));
+    ASSERT_EQ_INT(BTX_ERR_BIT_INCOMPLETE, btx_validate("\\b1111'____ \\xff", 16));
     /* incomplete at EOF */
-    ASSERT_EQ_INT(BTX_ERR_BIT_INCOMPLETE, btx_validate("0b1111'____", 11));
+    ASSERT_EQ_INT(BTX_ERR_BIT_INCOMPLETE, btx_validate("\\b1111'____", 11));
     /* malformed bit token */
-    ASSERT_EQ_INT(BTX_ERR_INVALID_BIT_SYNTAX, btx_validate("0b1111", 6));
+    ASSERT_EQ_INT(BTX_ERR_INVALID_BIT_SYNTAX, btx_validate("\\b1111", 6));
 }
 
 /* -------------------------------------------------------------------------
@@ -92,8 +92,8 @@ static void test_decode_hex(void) {
 
 static void test_decode_bits(void) {
     uint8_t *out = NULL; size_t len = 0;
-    /* 0b11______ 0b__1100__ 0b______11 → 0b11110011 = 0xf3 */
-    ASSERT_EQ_INT(BTX_OK, btx_decode("0b11______ 0b__1100__ 0b______11", 32, &out, &len));
+    /* \\b11______ \\b__1100__ \\b______11 → \\b11110011 = 0xf3 */
+    ASSERT_EQ_INT(BTX_OK, btx_decode("\\b11______ \\b__1100__ \\b______11", 32, &out, &len));
     ASSERT_EQ_INT(1, (int)len);
     ASSERT_EQ_INT(0xf3, out[0]);
     btx_free(out);
@@ -102,7 +102,7 @@ static void test_decode_bits(void) {
 static void test_decode_mixed(void) {
     uint8_t *out = NULL; size_t len = 0;
     /* \xab, then two partials forming 0xff, then \xcd */
-    ASSERT_EQ_INT(BTX_OK, btx_decode("\\xab 0b1111'____ 0b____'1111 \\xcd", 33, &out, &len));
+    ASSERT_EQ_INT(BTX_OK, btx_decode("\\xab \\b1111'____ \\b____'1111 \\xcd", 33, &out, &len));
     ASSERT_EQ_INT(3, (int)len);
     ASSERT_EQ_INT(0xab, out[0]);
     ASSERT_EQ_INT(0xff, out[1]);
