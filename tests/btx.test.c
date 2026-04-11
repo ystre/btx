@@ -1,0 +1,177 @@
+#include "btx/btx.h"
+
+#include <stdio.h>
+#include <string.h>
+
+static int g_pass = 0, g_fail = 0;
+
+#define ASSERT(cond) do { \
+    if (cond) { g_pass++; } \
+    else { fprintf(stderr, "FAIL %s:%d: %s\n", __FILE__, __LINE__, #cond); g_fail++; } \
+} while (0)
+
+#define ASSERT_EQ_INT(a, b)  ASSERT((a) == (b))
+#define ASSERT_EQ_MEM(a, b, n) ASSERT(memcmp((a), (b), (n)) == 0)
+
+/* -------------------------------------------------------------------------
+ * btx_validate
+ * ---------------------------------------------------------------------- */
+
+static void test_validate_ok(void) {
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\x00", 4));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\xff\\x12\\xac", 12));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("  \\x01  \\x02  ", 14));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("// comment\n\\xab", 15));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\xab // inline\n\\xcd", 19));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("", 0));
+    /* case insensitivity */
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\xAB", 4));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\xAb", 4));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\xaB", 4));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("\\xFF\\xAC", 8));
+}
+
+static void test_validate_hex_errors(void) {
+    ASSERT_EQ_INT(BTX_ERR_INVALID_HEX,   btx_validate("\\xGG", 4));
+    ASSERT_EQ_INT(BTX_ERR_INVALID_TOKEN, btx_validate("hello", 5));
+}
+
+static void test_validate_bits_ok(void) {
+    /* single complete byte */
+    ASSERT_EQ_INT(BTX_OK, btx_validate("0b11110011", 10));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("0b1111'0011", 11));
+    /* two partials forming one byte */
+    ASSERT_EQ_INT(BTX_OK, btx_validate("0b1111'____ 0b____'0011", 23));
+    /* three partials */
+    ASSERT_EQ_INT(BTX_OK, btx_validate("0b11______ 0b__1100__ 0b______11", 32));
+    /* multiple consecutive groups (each token is a complete byte) */
+    ASSERT_EQ_INT(BTX_OK, btx_validate("0b11110000 0b00001111", 21));
+    ASSERT_EQ_INT(BTX_OK, btx_validate("0b1111'____ 0b____'1111 0b00__'____ 0b__11'00__ 0b____'__11", 59));
+}
+
+static void test_validate_bits_errors(void) {
+    /* non-contiguous within token */
+    ASSERT_EQ_INT(BTX_ERR_BIT_NONCONTIGUOUS, btx_validate("0b1__1'____", 11));
+    /* wrong order: skips bits */
+    ASSERT_EQ_INT(BTX_ERR_BIT_ORDER, btx_validate("0b1111'____ 0b______11", 22));
+    /* overlap: both set bit 7 */
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b1_______ 0b1_______", 21));
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b1_______ 0b0_______", 21));
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b0_______ 0b1_______", 21));
+    ASSERT_EQ_INT(BTX_ERR_BIT_OVERLAP, btx_validate("0b0_______ 0b0_______", 21));
+    /* incomplete: hex token mid-group */
+    ASSERT_EQ_INT(BTX_ERR_BIT_INCOMPLETE, btx_validate("0b1111'____ \\xff", 16));
+    /* incomplete at EOF */
+    ASSERT_EQ_INT(BTX_ERR_BIT_INCOMPLETE, btx_validate("0b1111'____", 11));
+    /* malformed bit token */
+    ASSERT_EQ_INT(BTX_ERR_INVALID_BIT_SYNTAX, btx_validate("0b1111", 6));
+}
+
+/* -------------------------------------------------------------------------
+ * btx_decode
+ * ---------------------------------------------------------------------- */
+
+static void test_decode_hex(void) {
+    uint8_t *out = NULL; size_t len = 0;
+    ASSERT_EQ_INT(BTX_OK, btx_decode("\\x12\\xac", 8, &out, &len));
+    ASSERT_EQ_INT(2, (int)len);
+    ASSERT_EQ_INT(0x12, out[0]);
+    ASSERT_EQ_INT(0xac, out[1]);
+    btx_free(out);
+    /* case insensitivity */
+    ASSERT_EQ_INT(BTX_OK, btx_decode("\\xAB", 4, &out, &len));
+    ASSERT_EQ_INT(1, (int)len);
+    ASSERT_EQ_INT(0xab, out[0]);
+    btx_free(out);
+    ASSERT_EQ_INT(BTX_OK, btx_decode("\\xAb\\xFF", 8, &out, &len));
+    ASSERT_EQ_INT(2, (int)len);
+    ASSERT_EQ_INT(0xab, out[0]);
+    ASSERT_EQ_INT(0xff, out[1]);
+    btx_free(out);
+}
+
+static void test_decode_bits(void) {
+    uint8_t *out = NULL; size_t len = 0;
+    /* 0b11______ 0b__1100__ 0b______11 → 0b11110011 = 0xf3 */
+    ASSERT_EQ_INT(BTX_OK, btx_decode("0b11______ 0b__1100__ 0b______11", 32, &out, &len));
+    ASSERT_EQ_INT(1, (int)len);
+    ASSERT_EQ_INT(0xf3, out[0]);
+    btx_free(out);
+}
+
+static void test_decode_mixed(void) {
+    uint8_t *out = NULL; size_t len = 0;
+    /* \xab, then two partials forming 0xff, then \xcd */
+    ASSERT_EQ_INT(BTX_OK, btx_decode("\\xab 0b1111'____ 0b____'1111 \\xcd", 33, &out, &len));
+    ASSERT_EQ_INT(3, (int)len);
+    ASSERT_EQ_INT(0xab, out[0]);
+    ASSERT_EQ_INT(0xff, out[1]);
+    ASSERT_EQ_INT(0xcd, out[2]);
+    btx_free(out);
+}
+
+static void test_decode_empty(void) {
+    uint8_t *out = NULL; size_t len = 0;
+    ASSERT_EQ_INT(BTX_OK, btx_decode("", 0, &out, &len));
+    ASSERT_EQ_INT(0, (int)len);
+    btx_free(out);
+}
+
+/* -------------------------------------------------------------------------
+ * btx_encode
+ * ---------------------------------------------------------------------- */
+
+static void test_encode(void) {
+    char *out = NULL; size_t len = 0;
+    uint8_t data[] = {0x12, 0xac};
+    ASSERT_EQ_INT(BTX_OK, btx_encode(data, 2, &out, &len));
+    ASSERT_EQ_INT(8, (int)len);
+    ASSERT_EQ_MEM("\\x12\\xac", out, 8);
+    btx_free(out);
+}
+
+static void test_encode_empty(void) {
+    char *out = NULL; size_t len = 0;
+    ASSERT_EQ_INT(BTX_OK, btx_encode(NULL, 0, &out, &len));
+    ASSERT_EQ_INT(0, (int)len);
+    btx_free(out);
+}
+
+/* -------------------------------------------------------------------------
+ * Round-trip
+ * ---------------------------------------------------------------------- */
+
+static void test_roundtrip(void) {
+    uint8_t orig[] = {0x00, 0x01, 0x7f, 0x80, 0xff};
+    char *enc = NULL; size_t enc_len = 0;
+    ASSERT_EQ_INT(BTX_OK, btx_encode(orig, 5, &enc, &enc_len));
+
+    uint8_t *dec = NULL; size_t dec_len = 0;
+    ASSERT_EQ_INT(BTX_OK, btx_decode(enc, enc_len, &dec, &dec_len));
+    ASSERT_EQ_INT(5, (int)dec_len);
+    ASSERT_EQ_MEM(orig, dec, 5);
+
+    btx_free(enc);
+    btx_free(dec);
+}
+
+/* -------------------------------------------------------------------------
+ * main
+ * ---------------------------------------------------------------------- */
+
+int main(void) {
+    test_validate_ok();
+    test_validate_hex_errors();
+    test_validate_bits_ok();
+    test_validate_bits_errors();
+    test_decode_hex();
+    test_decode_bits();
+    test_decode_mixed();
+    test_decode_empty();
+    test_encode();
+    test_encode_empty();
+    test_roundtrip();
+
+    printf("%d passed, %d failed\n", g_pass, g_fail);
+    return g_fail ? 1 : 0;
+}
