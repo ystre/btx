@@ -63,7 +63,7 @@ static btx_result_t next_token(lexer_t *l, token_t *tok) {
     }
 
     /* \xNN */
-    if (l->p[0] == '\\' && l->p + 3 < l->end && l->p[1] == 'x') {
+    if (l->p + 3 < l->end && l->p[0] == '\\' && l->p[1] == 'x') {
         int hi = hex_digit(l->p[2]);
         int lo = hex_digit(l->p[3]);
         if (hi < 0 || lo < 0) return BTX_ERR_INVALID_HEX;
@@ -74,7 +74,7 @@ static btx_result_t next_token(lexer_t *l, token_t *tok) {
     }
 
     /* \bBBBBBBBB or \bBBBB'BBBB */
-    if (l->p[0] == '\\' && l->p + 1 < l->end && l->p[1] == 'b') {
+    if (l->p + 1 < l->end && l->p[0] == '\\' && l->p[1] == 'b') {
         l->p += 2;
         int pos = 0;
         while (pos < 8 && l->p < l->end) {
@@ -86,6 +86,7 @@ static btx_result_t next_token(lexer_t *l, token_t *tok) {
             else break;
         }
         if (pos != 8) return BTX_ERR_INVALID_BIT_SYNTAX;
+        if (l->p < l->end && *l->p == '\'') return BTX_ERR_INVALID_BIT_SYNTAX;
         tok->type = TOK_BITS;
         return BTX_OK;
     }
@@ -130,6 +131,7 @@ typedef struct {
 
 static btx_result_t buf_push(buf_t *b, uint8_t byte) {
     if (b->len == b->cap) {
+        if (b->cap > SIZE_MAX / 2) return BTX_ERR_OOM;
         size_t ncap = b->cap ? b->cap * 2 : 64;
         uint8_t *nd = realloc(b->data, ncap);
         if (!nd) return BTX_ERR_OOM;
@@ -155,12 +157,6 @@ typedef struct {
     int      next_bit;   /* 0..7; 0 means start of a fresh byte */
     uint8_t  owned_mask;
 } bitstate_t;
-
-static btx_result_t flush_if_complete(bitstate_t *bs, buf_t *out) {
-    if (bs->next_bit == 0) return BTX_OK; /* nothing pending */
-    /* next_bit == 0 after wrapping means byte complete — handled in process_bits */
-    return BTX_OK;
-}
 
 static btx_result_t process_bits(bitstate_t *bs, const token_t *tok, buf_t *out) {
     btx_result_t r = check_contiguous(tok->bits);
@@ -254,6 +250,7 @@ btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out
 
 btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out_len) {
     /* Each byte becomes \xNN (4 chars) + NUL terminator */
+    if (len > (SIZE_MAX - 1) / 4) return BTX_ERR_OOM;
     size_t sz = len * 4 + 1;
     char *buf = malloc(sz);
     if (!buf) return BTX_ERR_OOM;
