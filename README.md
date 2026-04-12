@@ -50,6 +50,17 @@ const char*  btx_strerror(btx_result_t result);
 void         btx_free(void *ptr);
 ```
 
+## RFC Draft
+
+The formal specification draft is in `rfc/draft-viragh-btx-format-00.xml`
+(RFC XML v3 format). To render it as text or HTML:
+
+```sh
+pip install xml2rfc
+xml2rfc rfc/draft-viragh-btx-format-00.xml --text   # → draft-viragh-btx-format-00.txt
+xml2rfc rfc/draft-viragh-btx-format-00.xml --html   # → draft-viragh-btx-format-00.html
+```
+
 ## Install
 
 ```sh

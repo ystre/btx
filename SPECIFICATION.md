@@ -82,6 +82,7 @@ Invalid inputs:
 \b1111'____ \b______11   // error: ordered ownership violated (skips bits 5-2)
 \b1111'____ \b1111'____  // error: overlapping ownership
 \b1111'____ \xff         // error: incomplete byte before non-\b token
+\b11110000'              // error: apostrophe after complete token
 ```
 
 ## Extensibility
