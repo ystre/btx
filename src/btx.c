@@ -66,7 +66,7 @@ static btx_result_t next_token(lexer_t *l, token_t *tok) {
     if (l->p + 3 < l->end && l->p[0] == '\\' && l->p[1] == 'x') {
         int hi = hex_digit(l->p[2]);
         int lo = hex_digit(l->p[3]);
-        if (hi < 0 || lo < 0) return BTX_ERR_INVALID_HEX;
+        if (hi < 0 || lo < 0) return BTX_ERR_INVALID_HEX_SYNTAX;
         tok->type = TOK_HEX;
         tok->byte = (uint8_t)((hi << 4) | lo);
         l->p += 4;
@@ -240,6 +240,7 @@ static btx_result_t parse(const char *text, size_t len, buf_t *out) {
  * ---------------------------------------------------------------------- */
 
 btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len) {
+    if (!text || !out || !out_len) return BTX_ERR_INVALID_ARG;
     buf_t buf = {NULL, 0, 0};
     btx_result_t r = parse(text, len, &buf);
     if (r != BTX_OK) { free(buf.data); return r; }
@@ -250,6 +251,7 @@ btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out
 
 btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out_len) {
     /* Each byte becomes \xNN (4 chars) + NUL terminator */
+    if (!data || !out || !out_len) return BTX_ERR_INVALID_ARG;
     if (len > (SIZE_MAX - 1) / 4) return BTX_ERR_OOM;
     size_t sz = len * 4 + 1;
     char *buf = malloc(sz);
@@ -269,21 +271,23 @@ btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out
 }
 
 btx_result_t btx_validate(const char *text, size_t len) {
+    if (!text) return BTX_ERR_INVALID_ARG;
     return parse(text, len, NULL);
 }
 
 const char* btx_strerror(btx_result_t result) {
     switch (result) {
-        case BTX_OK:                     return "success";
-        case BTX_ERR_INVALID_TOKEN:      return "unrecognized token";
-        case BTX_ERR_INVALID_HEX:        return "invalid hex token";
-        case BTX_ERR_INVALID_BIT_SYNTAX: return "invalid bit-pack token";
-        case BTX_ERR_BIT_NONCONTIGUOUS:  return "bit-pack token has non-contiguous owned bits";
-        case BTX_ERR_BIT_ORDER:          return "bit-pack token owned bits are out of order";
-        case BTX_ERR_BIT_OVERLAP:        return "bit-pack tokens have overlapping owned bits";
-        case BTX_ERR_BIT_INCOMPLETE:     return "incomplete bit-pack group";
-        case BTX_ERR_OOM:                return "out of memory";
-        default:                         return "unknown error";
+        case BTX_OK:                        return "success";
+        case BTX_ERR_INVALID_ARG:           return "invalid argument";
+        case BTX_ERR_INVALID_TOKEN:         return "invalid token";
+        case BTX_ERR_INVALID_HEX_SYNTAX:    return "invalid hex syntax";
+        case BTX_ERR_INVALID_BIT_SYNTAX:    return "invalid bit syntax";
+        case BTX_ERR_BIT_NONCONTIGUOUS:     return "non-contiguous bit ownership";
+        case BTX_ERR_BIT_ORDER:             return "out of order bit ownership";
+        case BTX_ERR_BIT_OVERLAP:           return "overlapping bit ownership";
+        case BTX_ERR_BIT_INCOMPLETE:        return "incomplete byte";
+        case BTX_ERR_OOM:                   return "out of memory";
+        default:                            return "unknown error";
     }
 }
 
