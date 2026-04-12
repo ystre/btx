@@ -32,7 +32,7 @@ static void test_validate_ok(void) {
 }
 
 static void test_validate_hex_errors(void) {
-    ASSERT_EQ_INT(BTX_ERR_INVALID_HEX,   btx_validate("\\xGG", 4));
+    ASSERT_EQ_INT(BTX_ERR_INVALID_HEX_SYNTAX, btx_validate("\\xGG", 4));
     ASSERT_EQ_INT(BTX_ERR_INVALID_TOKEN, btx_validate("hello", 5));
 }
 
@@ -132,7 +132,8 @@ static void test_encode(void) {
 
 static void test_encode_empty(void) {
     char *out = NULL; size_t len = 0;
-    ASSERT_EQ_INT(BTX_OK, btx_encode(NULL, 0, &out, &len));
+    uint8_t empty[] = {0};
+    ASSERT_EQ_INT(BTX_OK, btx_encode(empty, 0, &out, &len));
     ASSERT_EQ_INT(0, (int)len);
     btx_free(out);
 }
