@@ -4,6 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
     BTX_OK = 0,
     BTX_ERR_INVALID_ARG,        /* NULL or invalid argument */
@@ -21,7 +25,7 @@ typedef enum {
 /**
  * @brief Decode BTX text to binary.
  *
- * @param text    Input BTX text. Must not be NULL.
+ * @param text    Input BTX text. May be NULL only if @p len is 0.
  * @param len     Length of @p text in bytes.
  * @param out     On success, set to a newly allocated buffer; free with btx_free(). Must not be NULL.
  * @param out_len On success, set to the number of decoded bytes. Must not be NULL.
@@ -33,7 +37,7 @@ btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out
 /**
  * @brief Encode binary data to BTX text (\xNN per byte).
  *
- * @param data    Input bytes. Must not be NULL.
+ * @param data    Input bytes. May be NULL only if @p len is 0.
  * @param len     Number of bytes to encode.
  * @param out     On success, set to a NUL-terminated string; free with btx_free(). Must not be NULL.
  * @param out_len On success, set to the length of the encoded string (excluding NUL). Must not be NULL.
@@ -45,7 +49,7 @@ btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out
 /**
  * @brief Validate BTX text without producing output.
  *
- * @param text  Input BTX text. Must not be NULL.
+ * @param text  Input BTX text. May be NULL only if @p len is 0.
  * @param len   Length of @p text in bytes.
  *
  * @return BTX_OK if valid; error code otherwise.
@@ -67,5 +71,9 @@ const char* btx_strerror(btx_result_t result);
  * @param ptr  Pointer to free. NULL is safe.
  */
 void btx_free(void *ptr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BTX_BTX_H */
