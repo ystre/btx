@@ -1,4 +1,4 @@
-#include <btx/btx.h>
+#include <libbtx/btx.h>
 
 #include <boost/program_options.hpp>
 

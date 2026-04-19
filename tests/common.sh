@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel)"
 BUILD_DIR="${BUILD_DIR:-${PROJECT_ROOT}/build/debug}"
-BTX_BIN="${BTX_BIN:-${BUILD_DIR}/btx-cli/btx}"
+BTX_BIN="${BTX_BIN:-${BUILD_DIR}/btx/btx}"
 
 if [[ ! -x "${BTX_BIN}" ]]; then
     echo "btx binary not found or not executable: ${BTX_BIN}" >&2

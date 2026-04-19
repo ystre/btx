@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 project(btx
-    VERSION 0.2.0
+    VERSION 0.3.0
     LANGUAGES C CXX
 )
 
@@ -14,7 +14,6 @@ include(cmake/dependencies.cmake)
 
 enable_testing()
 
+add_subdirectory(libbtx)
 add_subdirectory(btx)
-add_subdirectory(btx-cli)
-
 add_subdirectory(tests)
