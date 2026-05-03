@@ -1,4 +1,4 @@
-#include "btx/btx.h"
+#include <libbtx/btx.h>
 
 #include <stdlib.h>
 #include <string.h>
@@ -240,7 +240,7 @@ static btx_result_t parse(const char *text, size_t len, buf_t *out) {
  * ---------------------------------------------------------------------- */
 
 btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len) {
-    if (!text || !out || !out_len) return BTX_ERR_INVALID_ARG;
+    if ((!text && len > 0) || !out || !out_len) return BTX_ERR_INVALID_ARG;
     buf_t buf = {NULL, 0, 0};
     btx_result_t r = parse(text, len, &buf);
     if (r != BTX_OK) { free(buf.data); return r; }
@@ -251,7 +251,7 @@ btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out
 
 btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out_len) {
     /* Each byte becomes \xNN (4 chars) + NUL terminator */
-    if (!data || !out || !out_len) return BTX_ERR_INVALID_ARG;
+    if ((!data && len > 0) || !out || !out_len) return BTX_ERR_INVALID_ARG;
     if (len > (SIZE_MAX - 1) / 4) return BTX_ERR_OOM;
     size_t sz = len * 4 + 1;
     char *buf = malloc(sz);
@@ -271,7 +271,7 @@ btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out
 }
 
 btx_result_t btx_validate(const char *text, size_t len) {
-    if (!text) return BTX_ERR_INVALID_ARG;
+    if (!text && len > 0) return BTX_ERR_INVALID_ARG;
     return parse(text, len, NULL);
 }
 

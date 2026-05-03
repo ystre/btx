@@ -1,4 +1,4 @@
-#include "btx/btx.h"
+#include <libbtx/btx.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -169,6 +169,9 @@ static void test_decode_empty(void) {
     ASSERT_EQ_INT(BTX_OK, btx_decode("", 0, &out, &len));
     ASSERT_EQ_INT(0, (int)len);
     btx_free(out);
+    ASSERT_EQ_INT(BTX_OK, btx_decode(NULL, 0, &out, &len));
+    ASSERT_EQ_INT(0, (int)len);
+    btx_free(out);
 }
 
 /* -------------------------------------------------------------------------
@@ -202,6 +205,14 @@ static void test_encode_empty(void) {
     ASSERT_EQ_INT(BTX_OK, btx_encode(empty, 0, &out, &len));
     ASSERT_EQ_INT(0, (int)len);
     btx_free(out);
+    ASSERT_EQ_INT(BTX_OK, btx_encode(NULL, 0, &out, &len));
+    ASSERT_EQ_INT(0, (int)len);
+    btx_free(out);
+}
+
+static void test_validate_empty(void) {
+    ASSERT_EQ_INT(BTX_OK, btx_validate("", 0));
+    ASSERT_EQ_INT(BTX_OK, btx_validate(NULL, 0));
 }
 
 /* -------------------------------------------------------------------------
@@ -224,10 +235,10 @@ static void test_strerror(void) {
 
 static void test_invalid_args(void) {
     uint8_t *out = NULL; size_t len = 0;
-    ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_decode(NULL, 0, &out, &len));
+    ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_decode(NULL, 1, &out, &len));
     ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_decode("\\xab", 4, NULL, &len));
     ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_decode("\\xab", 4, &out, NULL));
-    ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_validate(NULL, 0));
+    ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_validate(NULL, 1));
     char *enc = NULL; size_t enc_len = 0;
     ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_encode(NULL, 1, &enc, &enc_len));
     ASSERT_EQ_INT(BTX_ERR_INVALID_ARG, btx_encode((const uint8_t *)"", 0, NULL, &enc_len));
@@ -294,6 +305,7 @@ int main(void) {
     test_decode_empty();
     test_encode();
     test_encode_empty();
+    test_validate_empty();
     test_strerror();
     test_invalid_args();
     test_free_null();
