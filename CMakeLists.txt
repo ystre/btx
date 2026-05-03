@@ -12,6 +12,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(cmake/dependencies.cmake)
 
+execute_process(
+    COMMAND git -C ${CMAKE_SOURCE_DIR} describe --always --dirty
+    OUTPUT_VARIABLE GIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+
 enable_testing()
 
 add_subdirectory(libbtx)
