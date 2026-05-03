@@ -22,6 +22,11 @@ typedef enum {
     BTX_RESULT_MAX, /* sentinel — not a valid result code */
 } btx_result_t;
 
+typedef struct {
+    int line;   /* 1-based */
+    int col;    /* 1-based */
+} btx_error_t;
+
 /**
  * @brief Decode BTX text to binary.
  *
@@ -29,10 +34,11 @@ typedef enum {
  * @param len     Length of @p text in bytes.
  * @param out     On success, set to a newly allocated buffer; free with btx_free(). Must not be NULL.
  * @param out_len On success, set to the number of decoded bytes. Must not be NULL.
+ * @param err     On failure, provide additional information about where the issue occurred. May be NULL.
  *
  * @return BTX_OK on success; error code otherwise. On error, @p out and @p out_len are unmodified.
  */
-btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len);
+btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err);
 
 /**
  * @brief Encode binary data to BTX text (\xNN per byte).
@@ -51,10 +57,11 @@ btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out
  *
  * @param text  Input BTX text. May be NULL only if @p len is 0.
  * @param len   Length of @p text in bytes.
+ * @param err   On failure, provide additional information about where the issue occurred. May be NULL.
  *
  * @return BTX_OK if valid; error code otherwise.
  */
-btx_result_t btx_validate(const char *text, size_t len);
+btx_result_t btx_validate(const char *text, size_t len, btx_error_t *err);
 
 /**
  * @brief Return a human-readable string for a result code.

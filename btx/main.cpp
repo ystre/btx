@@ -30,9 +30,10 @@ int cmd_decode(const std::string& path) {
 
     std::uint8_t* out = nullptr;
     std::size_t out_len = 0;
-    const btx_result_t r = btx_decode(reinterpret_cast<const char*>(raw.data()), raw.size(), &out, &out_len);
+    btx_error_t err = {};
+    const btx_result_t r = btx_decode(reinterpret_cast<const char*>(raw.data()), raw.size(), &out, &out_len, &err);
     if (r != BTX_OK) {
-        std::cerr << "btx: " << btx_strerror(r) << '\n';
+        std::cerr << "btx: " << btx_strerror(r) << " at line " << err.line << " col " << err.col << '\n';
         return EXIT_FAILURE;
     }
     std::cout.write(reinterpret_cast<const char*>(out), static_cast<std::streamsize>(out_len));
@@ -58,9 +59,10 @@ int cmd_encode(const std::string& path) {
 int cmd_validate(const std::string& path) {
     const auto raw = read_input(path);
 
-    const btx_result_t r = btx_validate(reinterpret_cast<const char*>(raw.data()), raw.size());
+    btx_error_t err = {};
+    const btx_result_t r = btx_validate(reinterpret_cast<const char*>(raw.data()), raw.size(), &err);
     if (r != BTX_OK) {
-        std::cerr << "btx: " << btx_strerror(r) << '\n';
+        std::cerr << "btx: " << btx_strerror(r) << " at line " << err.line << " col " << err.col << '\n';
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
