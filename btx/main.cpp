@@ -25,13 +25,13 @@ namespace po = boost::program_options;
     return { std::istreambuf_iterator<char>(f), {} };
 }
 
-int cmd_decode(const std::string& path) {
+int cmd_to_bin(const std::string& path) {
     const auto raw = read_input(path);
 
     std::uint8_t* out = nullptr;
     std::size_t out_len = 0;
     btx_error_t err = {};
-    const btx_result_t r = btx_decode(reinterpret_cast<const char*>(raw.data()), raw.size(), &out, &out_len, &err);
+    const btx_result_t r = btx_to_bin(reinterpret_cast<const char*>(raw.data()), raw.size(), &out, &out_len, &err);
     if (r != BTX_OK) {
         std::cerr << "btx: " << btx_strerror(r) << " at line " << err.line << " col " << err.col << '\n';
         return EXIT_FAILURE;
@@ -41,12 +41,12 @@ int cmd_decode(const std::string& path) {
     return EXIT_SUCCESS;
 }
 
-int cmd_encode(const std::string& path) {
+int cmd_from_bin(const std::string& path) {
     const auto raw = read_input(path);
 
     char* out = nullptr;
     std::size_t out_len = 0;
-    const btx_result_t r = btx_encode(raw.data(), raw.size(), &out, &out_len);
+    const btx_result_t r = btx_from_bin(raw.data(), raw.size(), &out, &out_len);
     if (r != BTX_OK) {
         std::cerr << "btx: " << btx_strerror(r) << '\n';
         return EXIT_FAILURE;
@@ -56,31 +56,20 @@ int cmd_encode(const std::string& path) {
     return EXIT_SUCCESS;
 }
 
-int cmd_validate(const std::string& path) {
-    const auto raw = read_input(path);
-
-    btx_error_t err = {};
-    const btx_result_t r = btx_validate(reinterpret_cast<const char*>(raw.data()), raw.size(), &err);
-    if (r != BTX_OK) {
-        std::cerr << "btx: " << btx_strerror(r) << " at line " << err.line << " col " << err.col << '\n';
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-}
-
 [[nodiscard]] auto parse_args(int argc, char* argv[]) -> std::optional<po::variables_map> {
     auto visible = po::options_description("options");
     visible.add_options()
+        ("reverse,r", "decode BTX text to binary (default: encode binary to BTX)")
         ("help,h",    "show this help")
-        ("version,V", "print version");
+        ("version,V", "print version")
+    ;
 
     auto hidden = po::options_description();
     hidden.add_options()
-        ("command", po::value<std::string>())
-        ("args",    po::value<std::vector<std::string>>());
+        ("file", po::value<std::string>());
 
     po::positional_options_description pos;
-    pos.add("command", 1).add("args", -1);
+    pos.add("file", 1);
 
     auto all = po::options_description();
     all.add(visible).add(hidden);
@@ -96,12 +85,10 @@ int cmd_validate(const std::string& path) {
 
     if (vm.contains("help")) {
         std::cout <<
-            "Usage: btx [options] <command> [args]\n"
+            "Usage: btx [-r] <file>\n"
             "\n"
-            "commands:\n"
-            "  encode <file>     encode binary to BTX text, write to stdout\n"
-            "  decode <file>     decode BTX text to binary, write to stdout\n"
-            "  validate <file>   validate BTX text; exit 1 on error\n"
+            "  <file>    encode binary to BTX text, write to stdout\n"
+            "  -r <file> decode BTX text to binary, write to stdout\n"
             "\n"
             "use - as <file> to read from stdin\n"
             "\n"
@@ -113,34 +100,15 @@ int cmd_validate(const std::string& path) {
 }
 
 [[nodiscard]] int entrypoint(const po::variables_map& args) {
-    if (not args.contains("command")) {
-        std::cerr << "Usage: btx [options] <command> [args]\ntry: btx --help\n";
+    if (not args.contains("file")) {
+        std::cerr << "Usage: btx [-r] <file>\ntry: btx --help\n";
         return EXIT_FAILURE;
     }
 
-    const auto cmd      = args["command"].as<std::string>();
-    const auto cmd_args = args.contains("args")
-        ? args["args"].as<std::vector<std::string>>()
-        : std::vector<std::string>{};
+    const auto file = args["file"].as<std::string>();
 
-    if (cmd != "encode" and cmd != "decode" and cmd != "validate") {
-        std::cerr << "btx: unknown command '" << cmd << "'\ntry: btx --help\n";
-        return EXIT_FAILURE;
-    }
-    if (cmd_args.empty()) {
-        std::cerr << "btx: '" << cmd << "' requires a file argument\ntry: btx --help\n";
-        return EXIT_FAILURE;
-    }
-    if (cmd_args.size() > 1) {
-        std::cerr << "btx: unexpected argument '" << cmd_args[1] << "'\ntry: btx --help\n";
-        return EXIT_FAILURE;
-    }
-
-    if (cmd == "decode")   return cmd_decode(cmd_args[0]);
-    if (cmd == "encode")   return cmd_encode(cmd_args[0]);
-    if (cmd == "validate") return cmd_validate(cmd_args[0]);
-
-    return EXIT_FAILURE;
+    if (args.contains("reverse")) return cmd_to_bin(file);
+    return cmd_from_bin(file);
 }
 
 int main(int argc, char* argv[]) {

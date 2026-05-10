@@ -43,7 +43,7 @@ assert_output() {
 
 assert_output_contains() {
     local needle="$1" actual="$2" context="$3"
-    if echo "${actual}" | grep -qF "${needle}"; then
+    if echo "${actual}" | grep -qF -- "${needle}"; then
         pass "${context}"
     else
         fail "${context}: expected '${needle}' in output '${actual}'"

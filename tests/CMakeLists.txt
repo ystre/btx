@@ -10,6 +10,5 @@ endfunction()
 
 add_btx_script_test(encode   encode)
 add_btx_script_test(decode   decode)
-add_btx_script_test(validate validate)
 add_btx_script_test(roundtrip roundtrip)
 add_btx_script_test(errors   errors)

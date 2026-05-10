@@ -11,7 +11,7 @@ trap 'rm -rf "${TMPDIR}"' EXIT
 
 btx_decode() {
     printf '%s' "$1" > "${TMPDIR}/input.btx"
-    "${BTX_BIN}" decode "${TMPDIR}/input.btx" | xxd -p
+    "${BTX_BIN}" -r "${TMPDIR}/input.btx" | xxd -p
 }
 
 # Single hex token
@@ -36,11 +36,11 @@ assert_output 'f0' "$(btx_decode "\b1111'____ \b____'0000")" "decode two partial
 
 # Empty input
 printf '' > "${TMPDIR}/empty.btx"
-out="$("${BTX_BIN}" decode "${TMPDIR}/empty.btx" | xxd -p)"
+out="$("${BTX_BIN}" -r "${TMPDIR}/empty.btx" | xxd -p)"
 assert_output '' "${out}" "decode empty input"
 
 # stdin via -
-out="$(printf '\\xab' | "${BTX_BIN}" decode - | xxd -p)"
+out="$(printf '\\xab' | "${BTX_BIN}" -r - | xxd -p)"
 assert_output 'ab' "${out}" "decode from stdin"
 
 summary

@@ -272,7 +272,7 @@ static btx_result_t parse(const char *text, size_t len, buf_t *out, btx_error_t 
  * Public API
  * ---------------------------------------------------------------------- */
 
-btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err) {
+btx_result_t btx_to_bin(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err) {
     if ((!text && len > 0) || !out || !out_len) return BTX_ERR_INVALID_ARG;
     buf_t buf = {NULL, 0, 0};
     btx_result_t r = parse(text, len, &buf, err);
@@ -282,7 +282,7 @@ btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out
     return BTX_OK;
 }
 
-btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out_len) {
+btx_result_t btx_from_bin(const uint8_t *data, size_t len, char **out, size_t *out_len) {
     /* Each byte becomes \xNN (4 chars) + NUL terminator */
     if ((!data && len > 0) || !out || !out_len) return BTX_ERR_INVALID_ARG;
     if (len > (SIZE_MAX - 1) / 4) return BTX_ERR_OOM;
@@ -301,11 +301,6 @@ btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out
     *out     = buf;
     *out_len = (size_t)(p - buf);
     return BTX_OK;
-}
-
-btx_result_t btx_validate(const char *text, size_t len, btx_error_t *err) {
-    if (!text && len > 0) return BTX_ERR_INVALID_ARG;
-    return parse(text, len, NULL, err);
 }
 
 const char* btx_strerror(btx_result_t result) {

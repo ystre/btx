@@ -38,7 +38,7 @@ typedef struct {
  *
  * @return BTX_OK on success; error code otherwise. On error, @p out and @p out_len are unmodified.
  */
-btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err);
+btx_result_t btx_to_bin(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err);
 
 /**
  * @brief Encode binary data to BTX text (\xNN per byte).
@@ -50,18 +50,7 @@ btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out
  *
  * @return BTX_OK on success; error code otherwise. On error, @p out and @p out_len are unmodified.
  */
-btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out_len);
-
-/**
- * @brief Validate BTX text without producing output.
- *
- * @param text  Input BTX text. May be NULL only if @p len is 0.
- * @param len   Length of @p text in bytes.
- * @param err   On failure, provide additional information about where the issue occurred. May be NULL.
- *
- * @return BTX_OK if valid; error code otherwise.
- */
-btx_result_t btx_validate(const char *text, size_t len, btx_error_t *err);
+btx_result_t btx_from_bin(const uint8_t *data, size_t len, char **out, size_t *out_len);
 
 /**
  * @brief Return a human-readable string for a result code.
@@ -73,7 +62,7 @@ btx_result_t btx_validate(const char *text, size_t len, btx_error_t *err);
 const char* btx_strerror(btx_result_t result);
 
 /**
- * @brief Free memory allocated by btx_decode() or btx_encode().
+ * @brief Free memory allocated by btx_to_bin() or btx_from_bin().
  *
  * @param ptr  Pointer to free. NULL is safe.
  */
