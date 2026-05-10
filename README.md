@@ -43,9 +43,9 @@ Use `-` as `<file>` to read from stdin.
 ```c
 #include <btx/btx.h>
 
-btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len);
+btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err);
 btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out_len);
-btx_result_t btx_validate(const char *text, size_t len);
+btx_result_t btx_validate(const char *text, size_t len, btx_error_t *err);
 const char*  btx_strerror(btx_result_t result);
 void         btx_free(void *ptr);
 ```
