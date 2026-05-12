@@ -5,6 +5,8 @@ target_include_directories(libbtx PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 
+code_analysis(libbtx PRIVATE)
+
 add_executable(test-btx btx.test.c)
 target_link_libraries(test-btx PRIVATE libbtx)
 add_test(NAME test-btx COMMAND test-btx)
