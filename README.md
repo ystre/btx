@@ -29,11 +29,10 @@ ctest --test-dir build
 ## Usage
 
 ```sh
-btx encode <file>     # binary → BTX text (stdout)
-btx decode <file>     # BTX text → binary (stdout)
-btx validate <file>   # validate BTX text; exit 1 on error
-btx --help            # show usage
-btx --version         # print version
+btx <file>        # binary → BTX text (stdout)
+btx -r <file>     # BTX text → binary (stdout)
+btx --help        # show usage
+btx --version     # print version
 ```
 
 Use `-` as `<file>` to read from stdin.
@@ -43,9 +42,8 @@ Use `-` as `<file>` to read from stdin.
 ```c
 #include <btx/btx.h>
 
-btx_result_t btx_decode(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err);
-btx_result_t btx_encode(const uint8_t *data, size_t len, char **out, size_t *out_len);
-btx_result_t btx_validate(const char *text, size_t len, btx_error_t *err);
+btx_result_t btx_to_bin(const char *text, size_t len, uint8_t **out, size_t *out_len, btx_error_t *err);
+btx_result_t btx_from_bin(const uint8_t *data, size_t len, char **out, size_t *out_len);
 const char*  btx_strerror(btx_result_t result);
 void         btx_free(void *ptr);
 ```
