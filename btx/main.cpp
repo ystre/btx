@@ -1,31 +1,28 @@
 #include <libbtx/btx.h>
 
-#include <boost/program_options.hpp>
-
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <optional>
+#include <span>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <vector>
 
-namespace po = boost::program_options;
-
-[[nodiscard]] std::vector<std::uint8_t> read_input(const std::string& path) {
+[[nodiscard]] std::vector<std::uint8_t> read_input(std::string_view path) {
     if (path == "-") {
         return { std::istreambuf_iterator<char>(std::cin), {} };
     }
-    std::ifstream f(path, std::ios::binary);
+    std::ifstream f(path.data(), std::ios::binary);
     if (not f) {
-        throw std::runtime_error("cannot open '" + path + "'");
+        throw std::runtime_error("cannot open '" + std::string(path) + "'");
     }
     return { std::istreambuf_iterator<char>(f), {} };
 }
 
-int cmd_to_bin(const std::string& path) {
+int cmd_to_bin(std::string_view path) {
     const auto raw = read_input(path);
 
     std::uint8_t* out = nullptr;
@@ -41,7 +38,7 @@ int cmd_to_bin(const std::string& path) {
     return EXIT_SUCCESS;
 }
 
-int cmd_from_bin(const std::string& path) {
+int cmd_from_bin(std::string_view path) {
     const auto raw = read_input(path);
 
     char* out = nullptr;
@@ -56,68 +53,47 @@ int cmd_from_bin(const std::string& path) {
     return EXIT_SUCCESS;
 }
 
-[[nodiscard]] auto parse_args(int argc, char* argv[]) -> std::optional<po::variables_map> {
-    auto visible = po::options_description("options");
-    visible.add_options()
-        ("reverse,r", "decode BTX text to binary (default: encode binary to BTX)")
-        ("help,h",    "show this help")
-        ("version,V", "print version")
-    ;
-
-    auto hidden = po::options_description();
-    hidden.add_options()
-        ("file", po::value<std::string>());
-
-    po::positional_options_description pos;
-    pos.add("file", 1);
-
-    auto all = po::options_description();
-    all.add(visible).add(hidden);
-
-    po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).options(all).positional(pos).run(), vm);
-    po::notify(vm);
-
-    if (vm.contains("version")) {
-        std::cout << "btx " BTX_VERSION "\n";
-        return std::nullopt;
-    }
-
-    if (vm.contains("help")) {
-        std::cout <<
-            "Usage: btx [-r] <file>\n"
-            "\n"
-            "  <file>    encode binary to BTX text, write to stdout\n"
-            "  -r <file> decode BTX text to binary, write to stdout\n"
-            "\n"
-            "use - as <file> to read from stdin\n"
-            "\n"
-            << visible;
-        return std::nullopt;
-    }
-
-    return vm;
-}
-
-[[nodiscard]] int entrypoint(const po::variables_map& args) {
-    if (not args.contains("file")) {
-        std::cerr << "Usage: btx [-r] <file>\ntry: btx --help\n";
-        return EXIT_FAILURE;
-    }
-
-    const auto file = args["file"].as<std::string>();
-
-    if (args.contains("reverse")) return cmd_to_bin(file);
-    return cmd_from_bin(file);
-}
-
 int main(int argc, char* argv[]) {
     try {
-        const auto args = parse_args(argc, argv);
-        if (not args.has_value()) {
-            return EXIT_SUCCESS;
+        bool reverse = false;
+        std::string_view file;
+
+        for (const std::string_view arg : std::span(argv + 1, argc - 1)) {
+            if (arg == "--help" || arg == "-h") {
+                std::cout <<
+                    "Usage: btx [-r] <file>\n"
+                    "\n"
+                    "  <file>    encode binary to BTX text, write to stdout\n"
+                    "  -r <file> decode BTX text to binary, write to stdout\n"
+                    "\n"
+                    "use - as <file> to read from stdin\n"
+                    "\n"
+                    "options:\n"
+                    "  -r, --reverse  decode BTX text to binary (default: encode binary to BTX)\n"
+                    "  -h, --help     show this help\n"
+                    "  -V, --version  print version\n";
+                return EXIT_SUCCESS;
+            }
+            if (arg == "--version" || arg == "-V") {
+                std::cout << "btx " BTX_VERSION "\n";
+                return EXIT_SUCCESS;
+            }
+            if (arg == "--reverse" || arg == "-r") {
+                reverse = true;
+            } else if (arg == "-" || not arg.starts_with('-')) {
+                file = arg;
+            } else {
+                std::cerr << "btx: unknown option '" << arg << "'\ntry: btx --help\n";
+                return EXIT_FAILURE;
+            }
         }
-        return entrypoint(*args);
+
+        if (file.empty()) {
+            std::cerr << "Usage: btx [-r] <file>\ntry: btx --help\n";
+            return EXIT_FAILURE;
+        }
+
+        return reverse ? cmd_to_bin(file) : cmd_from_bin(file);
     } catch (const std::exception& ex) {
         std::cerr << "btx: " << ex.what() << '\n';
         return EXIT_FAILURE;
