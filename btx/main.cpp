@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
         bool reverse = false;
         std::string_view file;
 
-        for (const std::string_view arg : std::span(argv + 1, argc - 1)) {
+        for (const std::string_view arg : std::span(argv + 1, static_cast<std::size_t>(argc - 1))) {
             if (arg == "--help" || arg == "-h") {
                 std::cout <<
                     "Usage: btx [-r] <file>\n"
