@@ -26,12 +26,15 @@ assert_output_contains "btx" "${out}" "--version contains 'btx'"
 out="$("${BTX_BIN}" --help)"
 assert_output_contains "-r" "${out}" "--help mentions -r"
 
-# No arguments exits non-zero
-assert_exit 1 "$(exit_code)" "no args exits 1"
-
 # Non-existent file
 assert_exit 1 "$(exit_code /nonexistent/file.bin)" "non-existent file exits 1"
 assert_exit 1 "$(exit_code -r /nonexistent/file.btx)" "non-existent file with -r exits 1"
+
+# Too many positional arguments
+assert_exit 1 "$(exit_code a b c)" "3 positional args exits 1"
+
+# Unwritable outfile
+assert_exit 1 "$(exit_code /dev/null /nonexistent_dir/out.btx)" "unwritable outfile exits 1"
 
 # Invalid BTX input for decode
 printf 'not valid btx' > "${TMPDIR}/bad.btx"
